@@ -1,0 +1,51 @@
+<!doctype html><html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>♡ OUR 100 DAYS QUEST ♡</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;background:#090b10;color:#fff;font-family:monospace;touch-action:manipulation}
+body{display:flex;justify-content:center;min-height:100vh}.app{width:min(100%,520px);padding:8px}
+h1{text-align:center;font-size:17px;color:#e8ffc9;margin:6px 0 2px}.sub{text-align:center;color:#a9c995;font-size:11px;margin-bottom:6px}
+.frame{background:#121a26;border:3px solid #dfffbf;border-radius:8px;padding:7px}.hud{display:flex;justify-content:space-between;font-size:11px;padding:5px}.screen{position:relative;height:300px;background:#7fb464;border:3px solid #34452f;overflow:hidden}.screen canvas{width:100%;height:100%;image-rendering:pixelated;display:block}
+.overlay{position:absolute;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;padding:15px;text-align:center}.card{background:#111927;border:3px solid #dfffbf;padding:16px;width:94%;box-shadow:0 0 0 3px #283244}.card h2{font-size:23px;color:#e8ffc9;margin:5px 0 12px}.card p{font-size:12px;line-height:1.7}.btn{background:#293852;color:#fff;border:2px solid #dfffbf;padding:10px 14px;font:inherit;margin:4px}.dialog{position:absolute;bottom:5px;left:5px;right:5px;background:#111927ee;border:2px solid #dfffbf;padding:8px;font-size:12px;line-height:1.5}.dialog b{color:#e8ffc9}.quiz{height:175px;background:#182131;padding:7px;display:none}.quiz .question{text-align:center;font-size:11px;min-height:30px;color:#e8ffc9}.choices{display:grid;grid-template-columns:1fr 1fr;gap:6px;height:128px}.choices button{font:10px monospace;background:#293852;color:white;border:2px solid #b9d69f;padding:5px}.controls{display:flex;justify-content:space-between;align-items:center;padding:9px 4px 5px}.dpad{display:grid;grid-template-columns:45px 45px 45px;grid-template-rows:40px 40px;gap:3px}.dpad button,.a{background:#293852;color:white;border:2px solid #dfffbf;font:20px monospace;touch-action:none}.up{grid-column:2}.left{grid-column:1;grid-row:2}.down{grid-column:2;grid-row:2}.right{grid-column:3;grid-row:2}.a{width:64px;height:64px;border-radius:50%;background:#a94752;font-weight:bold}.hint{text-align:center;color:#8fa48b;font-size:9px;padding:4px}
+</style></head><body><div class="app"><h1>♡ OUR 100 DAYS QUEST ♡</h1><div class="sub">우리들의 100일 모험</div><div class="frame">
+<div class="hud"><span id="stage">PRESS START</span><span id="stars">☆ ☆ ☆ ☆</span></div>
+<div class="screen"><canvas id="game" width="320" height="200"></canvas><div id="overlay" class="overlay"></div><div id="dialog" class="dialog" style="display:none"></div></div>
+<div id="quiz" class="quiz"></div>
+<div class="controls"><div class="dpad"><button class="up" data-d="up">▲</button><button class="left" data-d="left">◀</button><button class="down" data-d="down">▼</button><button class="right" data-d="right">▶</button></div><button class="a" id="A">A</button></div>
+<div class="hint">한 칸 이동 · 길게 누르면 연속 이동 · A = 진행/조사</div></div></div>
+<script>
+(()=>{"use strict";
+const C=document.getElementById("game"),X=C.getContext("2d"),O=document.getElementById("overlay"),D=document.getElementById("dialog"),Q=document.getElementById("quiz"),ST=document.getElementById("stage"),SS=document.getElementById("stars");
+let state="START",stage=0,stars=0,x=2,y=6,dir="down",qi=0,wrong=false,hold=null,holdTimer=null,walk=0;
+const quiz=[
+["우리가 처음 만난 날은?",["5월 31일","6월 27일","7월 20일","8월 13일"]],
+["처음 데이트할 때 간 카페는?",["새들스커피앤바","카츠디나인","비둘이는 멍청해보여","바밤"]],
+["내가 가장 좋아하는 음식은?",["육회비빔밥","떡볶이","파스타","치킨"]],
+["내가 속상할 때 오빠가 해주면 좋은 것은?",["왜 그런지 묻고 맛있는 거 먹이기","그냥 기다리기","혼자 있게 해주기","게임 같이 하기"]]];
+function hud(){ST.textContent=state==="START"?"PRESS START":state==="CLEAR"?"CLEAR":"STAGE "+stage;SS.textContent="★".repeat(stars)+"☆".repeat(4-stars)}
+function panel(t){O.innerHTML='<div class="card">'+t+"</div>";O.style.display="flex"}
+function hide(){O.style.display="none";O.innerHTML=""}
+function dialogue(name,text,cb){D.innerHTML="<b>"+name+"</b><br>"+text+"<span style='float:right'>▼</span>";D.style.display="block";D._cb=cb;state="DIALOG"}
+function next(){if(state==="DIALOG"){let f=D._cb;D.style.display="none";D._cb=null;if(f)f();return}
+if(state==="OPENING"){stage=1;state="STAGE1";hide();hud();return}
+if(state==="STAGE1_CLEAR"){stars=1;stage=2;state="STAGE2";x=2;y=6;hide();hud();return}
+if(state==="STAGE2_CLEAR"){stars=2;stage=3;state="QUIZ";hide();showQuiz();hud();return}
+if(state==="STAGE3_CLEAR"){stars=3;stage=4;state="STAGE4";x=2;y=6;hide();hud();return}
+if(state==="STAGE4_CLEAR"){stars=4;state="FINAL";hide();finalEvent();hud();return}
+if(state==="LETTER"){state="CLEAR";hud();clearScreen();}}
+function start(){state="OPENING";panel("<h2>♡ OUR 100 DAYS QUEST ♡</h2><p>우리의 이야기는 5월 31일에 시작됐다.<br><br>그리고 0627.<br><br>100일 동안 쌓인 우리의 추억을 찾아보자.</p><button class='btn' id='go'>A · 시작하기</button>");document.getElementById("go").onclick=next;hud()}
+function finalEvent(){panel("<h2>마지막 장소</h2><p>여자친구가 기다리고 있다.</p><button class='btn' id='yes'>예</button><button class='btn' id='no'>아니오</button>");document.getElementById("yes").onclick=()=>{state="LETTER";letter()};document.getElementById("no").onpointerdown=e=>{e.preventDefault();let b=e.currentTarget;b.style.transform=`translate(${Math.random()*90-45}px,${Math.random()*50-25}px)`}}
+function letter(){panel("<h2>오빠에게서 편지를 받았다.</h2><p style='background:#f7edc9;color:#3b2a1d;padding:18px;line-height:1.9'>사랑하는 오빠 좋은 추억 만들어줘서 고마워 앞으로도 쭉쭉 만들자 사랑해!!</p><button class='btn' id='close'>A · 편지 닫기</button>");document.getElementById("close").onclick=next}
+function clearScreen(){panel("<div style='font-size:52px;font-weight:bold;color:#e8ffc9'>CLEAR!</div><div style='font-size:22px;color:#ffe77a'>★★★★</div><p>100일 동안 함께해줘서 고마워.<br>DAY 101부터도<br>우리의 다음 모험을 같이하자. ❤️</p><p style='color:#dfffbf'>사랑하는 오빠 좋은 추억 만들어줘서 고마워 앞으로도 쭉쭉 만들자 사랑해!!</p><button class='btn' id='again'>처음부터 다시하기</button>");document.getElementById("again").onclick=()=>panel("<h2>정말 다시 시작할까요?</h2><button class='btn' id='yes2'>예</button><button class='btn' id='no2'>아니오</button>");setTimeout(()=>{let a=document.getElementById("yes2");if(a)a.onclick=()=>{state="START";stage=0;stars=0;qi=0;x=2;y=6;hud();startScreen()};let n=document.getElementById("no2");if(n)n.onclick=clearScreen},0)}
+function startScreen(){panel("<h2>♡ OUR 100 DAYS QUEST ♡</h2><p>우리들의 100일 모험</p><button class='btn' id='ps'>[ PRESS START ]</button>");document.getElementById("ps").onclick=start}
+function showQuiz(){let z=quiz[qi];Q.style.display="block";Q.innerHTML="<div class='question'>"+(wrong?"<span style='color:#ff9b9b'>땡! 다시 생각해봐 😏</span><br>":"")+z[0]+"</div><div class='choices'>"+z[1].map((a,i)=>"<button data-i='"+i+"'>"+a+"</button>").join("")+"</div>";Q.querySelectorAll("button").forEach(b=>b.onclick=()=>{let i=+b.dataset.i;if(i!==0){wrong=true;showQuiz()}else{wrong=false;qi++;if(qi<4)showQuiz();else{Q.style.display="none";state="STAGE3_CLEAR";panel("<h2>STAGE 3 CLEAR!</h2><p>⭐ 별을 획득했습니다.</p><button class='btn' id='n'>A · 계속</button>");document.getElementById("n").onclick=next}}})}
+function clearStage(n,msg){state="STAGE"+n+"_CLEAR";panel("<h2>STAGE "+n+" CLEAR!</h2><p>"+msg+"<br><br>⭐ 별을 획득했습니다.</p><button class='btn' id='n'>A · 계속</button>");document.getElementById("n").onclick=next}
+function move(d){if(!["STAGE1","STAGE2","STAGE4"].includes(state))return;dir=d;let nx=x,ny=y;if(d==="up")ny--;if(d==="down")ny++;if(d==="left")nx--;if(d==="right")nx++;if(nx<0||nx>19||ny<0||ny>11)return;if((nx>=6&&nx<=8&&ny<=2)||(nx>=13&&nx<=16&&ny>=2&&ny<=3))return;x=nx;y=ny;walk=(walk+1)%3;
+if(state==="STAGE1"&&x>=15&&y>=5&&y<=7)dialogue("여자친구","여기가 우리가 처음 데이트했던 곳이야.",()=>clearStage(1,"새들스커피앤바"));
+}
+function interact(){if(state==="DIALOG"){next();return}if(state==="STAGE2"&&Math.abs(x-15)+Math.abs(y-8)<=2)dialogue("여자친구","같이 반지를 만들었던 날이 생각난다.",()=>clearStage(2,"반지를 찾았다!"));else if(state==="STAGE4"&&Math.abs(x-15)+Math.abs(y-8)<=2)dialogue("여자친구","같이 반지를 만들었던 날이 우리의 추억으로 남아 있어.",()=>clearStage(4,"마지막 별을 찾았다!"))}
+function draw(){X.fillStyle="#82b565";X.fillRect(0,0,320,200);for(let i=0;i<12;i++){X.fillStyle="#c6a56b";X.fillRect(0,90+i%2*16,320,16)}for(let i=0;i<18;i++){let tx=(i*53)%304,ty=(i*29)%165;X.fillStyle="#2c6439";X.fillRect(tx,ty,13,12);X.fillStyle="#6b432d";X.fillRect(tx+5,ty+10,4,7)}
+if(stage>=2){X.fillStyle="#ffe47a";X.beginPath();X.arc(248,136,7,0,Math.PI*2);X.stroke()}if(stage===1){X.fillStyle="#a8755e";X.fillRect(240,75,45,35);X.fillStyle="#ead8aa";X.fillRect(247,81,31,18)}
+X.fillStyle="#222";X.fillRect(x*16+4,y*16+5,8,9);X.fillStyle="#f0c5a0";X.fillRect(x*16+5,y*16+2,6,5);X.fillStyle="#17191d";X.fillRect(x*16+5,y*16+1,6,3)}
+function loop(){draw();requestAnimationFrame(loop)}function bind(b){let d=b.dataset.d;b.onpointerdown=e=>{e.preventDefault();clearInterval(holdTimer);move(d);holdTimer=setInterval(()=>move(d),180)};["pointerup","pointercancel","lostpointercapture","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>clearInterval(holdTimer)))}document.querySelectorAll(".dpad button").forEach(bind);document.getElementById("A").onclick=next;window.onblur=()=>clearInterval(holdTimer);document.addEventListener("visibilitychange",()=>clearInterval(holdTimer));document.addEventListener("keydown",e=>{if(e.key.startsWith("Arrow")){e.preventDefault();move(e.key.slice(5).toLowerCase())}if(e.key==="z"||e.key==="Enter"||e.key===" "){e.preventDefault();next()}});startScreen();hud();loop();
+})();</script></body></html>
